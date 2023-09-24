@@ -38,13 +38,15 @@
       name: unzip
       state: present
 
-  - name: Install Terraform binary
-    ansible.builtin.unarchive:
-      src: "{{ terraform_url }}"
-      dest: "{{ remote_tmp_dir }}"
-      mode: 0755
-      remote_src: true
-      validate_certs: "{{ validate_certs }}"
+  - name: Install tfenv
+    ansible.builtin.git:
+      repo: https://github.com/tfutils/tfenv.git
+      dest: "{{ ansible_env.HOME }}/.tfenv"
+
+  - name: Install the latest terraform version
+    ansible.builtin.command: "tfenv use {{ terraform_version }}"
+    environment:
+      PATH: "{{ ansible_env.HOME }}/.tfenv/bin:{{ ansible_env.PATH }}"
 
   when: terraform_version_installed is not defined or terraform_version_installed != terraform_version
 
@@ -53,7 +55,7 @@
 
 - name: Set path to terraform binary
   ansible.builtin.set_fact:
-    terraform_binary_path: "{{ terraform_binary_path.stdout or remote_tmp_dir ~ '/terraform' }}"
+    terraform_binary_path: "{{ ansible_env.HOME }}/.tfenv/bin/terraform"
 
 - name: Loop over provider upgrade test tasks
   ansible.builtin.include_tasks: test_provider_upgrade.yml
